@@ -7,60 +7,63 @@
 #target photoshop
 
 function main(){
-	if(!documents.length) return;
+    var layercomps = false;
+    if(!documents.length) return;
     var doc = app.activeDocument;
-	if(!doc.saved){
-		if(!confirm("Your document is not saved. \nAre you sure you want to continue?")){
-			return;
-    	}
-	}
+    if(!doc.saved){
+        if(!confirm("Your document is not saved. \nAre you sure you want to continue?")){
+            return;
+        }
+    }
     if(doc.layerComps.length != 0){
-    	if(!confirm("Do you want me to safe your Layer Compositions? \nClicking 'No' will only safe layers that are visible at this moment.")){
-			removeAllLayerComps(doc);
-    	}
+        if(!confirm("Do you want me to safe your Layer Compositions? \nClicking 'No' will only safe layers that are visible at this moment.")){
+            removeAllLayerComps(doc);
+        } else {
+            layercomps = true;
+        }
     }
 
     doc.layerComps.add("mail@brunoherfst.com"); //unique
 
-	selectAllLayers();
-	var layersSelected=getSelectedLayersIdx();
-	var layerIDs=[];
-	for(var d =0;d<layersSelected.length;d++){
-		layerIDs.push([[layersSelected[d]],["N"]]);
-	}
-	for( var c = 0; c < doc.layerComps.length; c++ ){
-		doc.layerComps[c].apply();
-		for(var z in layersSelected){
-			if(getLayerVisibilityByIndex( Number(layersSelected[z]))){
-				for(var s in layerIDs){
-					if(Number(layersSelected[z]) == Number(layerIDs[s][0])){
-						layerIDs[s][1] = "Y";
-						break;
-					}
-				}
-			}
-		}
-	}
-	var toDelete=[];
-	for(var l in layerIDs) {
-		if(layerIDs[l][1].toString() == "N") {
-			toDelete.push(getIDX(Number(layerIDs[l][0])));
-		}
-	}
-	for(var t in toDelete) {
-		selLayer(Number(toDelete[t]));
-		doc.activeLayer.remove();
-	}
-	removeEmptyLayerSets();
-    removeAllEmptyArtLayers(doc);
+    selectAllLayers();
+    var layersSelected=getSelectedLayersIdx();
+    var layerIDs=[];
+    for(var d =0;d<layersSelected.length;d++){
+        layerIDs.push([[layersSelected[d]],["N"]]);
+    }
+    for( var c = 0; c < doc.layerComps.length; c++ ){
+        doc.layerComps[c].apply();
+        for(var z in layersSelected){
+            if(getLayerVisibilityByIndex( Number(layersSelected[z]))){
+                for(var s in layerIDs){
+                    if(Number(layersSelected[z]) == Number(layerIDs[s][0])){
+                        layerIDs[s][1] = "Y";
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    var toDelete=[];
+    for(var l in layerIDs) {
+        if(layerIDs[l][1].toString() == "N") {
+            toDelete.push(getIDX(Number(layerIDs[l][0])));
+        }
+    }
+    for(var t in toDelete) {
+        selLayer(Number(toDelete[t]));
+        doc.activeLayer.remove();
+    }
+    removeAllEmptyArtLayers(doc, layercomps);
+    removeEmptyLayerSets();
     doc.layerComps["mail@brunoherfst.com"].remove();
-	alert("Done cleaning layers!");
+    alert("Done cleaning layers!");
 }
 
 function removeAllLayerComps(doc){
-	for( var i = doc.layerComps.length-1; i >= 0 ; i-- ){
-		doc.layerComps[i].remove();
-	}
+    for( var i = doc.layerComps.length-1; i >= 0 ; i-- ){
+        doc.layerComps[i].remove();
+    }
 }
 
 function removeEmptyLayerSets(){
@@ -85,18 +88,58 @@ function removeEmptyLayerSets(){
     }
 }
 
-function removeAllEmptyArtLayers(obj) {
+function removeAllEmptyArtLayers(obj, layercomps) {
+    function isLayerEmptyOrOffCanvas(layerRef) {
+        function cTID(s) { return app.charIDToTypeID(s); };
+
+        var desc47 = new ActionDescriptor();
+        var ref22 = new ActionReference();
+            ref22.putProperty( cTID('Chnl'), cTID('fsel') );
+            desc47.putReference( cTID('null'), ref22 );
+            var ref23 = new ActionReference();
+            ref23.putEnumerated( cTID('Chnl'), cTID('Chnl'), cTID('Trsp') );
+            ref23.putName( cTID('Lyr '), layerRef.name );
+        desc47.putReference( cTID('T   '), ref23 );
+        executeAction( cTID('setd'), desc47, DialogModes.NO );
+
+        var bounds = layerRef.bounds;
+        var docRef = activeDocument;
+
+        var layerSetRef = docRef.layerSets.add();
+        var layerRef = layerSetRef.artLayers.add();
+        try{
+            docRef.selection.fill( app.foregroundColor);
+        } catch(e){
+           //alert("off-canvas!");
+           bounds = ["0 px","0 px","0 px","0 px"];
+        }
+        layerSetRef.remove();
+        for (var i = 0; i < bounds.length; i++) {
+            if (parseFloat(bounds[i]) > 0) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     for( var i = obj.artLayers.length-1; 0 <= i; i--) {
         try {
-            if (obj.artLayers[i].kind == LayerKind.NORMAL && obj.artLayers[i].bounds[2] == 0 && obj.artLayers[i].bounds[3] == 0){
-                obj.artLayers[i].remove();
-            }
+            if(layercomps){
+                if (obj.artLayers[i].kind == LayerKind.NORMAL && obj.artLayers[i].bounds[2] == 0 && obj.artLayers[i].bounds[3] == 0){
+                    obj.artLayers[i].remove();
+                }
+            } else {
+				// we can do a deeper clean if layers are not attached to layer compositions.
+				if (isLayerEmptyOrOffCanvas(obj.artLayers[i])){
+					obj.artLayers[i].remove();
+				}
+			}
         } catch (e) {
             //do nothing
         }
     }
     for( var i = obj.layerSets.length-1; 0 <= i; i--) {
-        removeAllEmptyArtLayers(obj.layerSets[i]);
+        removeAllEmptyArtLayers(obj.layerSets[i], layercomps);
     }
 }
 
@@ -119,47 +162,47 @@ function isLayerSet(idx){
 }
 
 function getLayerVisibilityByIndex( idx ) {
-	var ref = new ActionReference();
-	ref.putProperty( charIDToTypeID("Prpr") , charIDToTypeID( "Vsbl" ));
-	ref.putIndex( charIDToTypeID( "Lyr " ), idx );
-	return executeActionGet(ref).getBoolean(charIDToTypeID( "Vsbl" ));
+    var ref = new ActionReference();
+    ref.putProperty( charIDToTypeID("Prpr") , charIDToTypeID( "Vsbl" ));
+    ref.putIndex( charIDToTypeID( "Lyr " ), idx );
+    return executeActionGet(ref).getBoolean(charIDToTypeID( "Vsbl" ));
 }
 
 function getLayerItemIndexByLayerID(id) {
     var ref = new ActionReference();
     ref.putProperty( charIDToTypeID("Prpr") , charIDToTypeID( "ItmI" ));
     ref.putIdentifier( charIDToTypeID( "Lyr " ), id );
-	try{
-		return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" ));
-	}catch(e){return true;}
+    try{
+        return executeActionGet(ref).getInteger(charIDToTypeID( "ItmI" ));
+    }catch(e){return true;}
 }
 
 function selLayer(layerID,add){
-	var result =getLayerItemIndexByLayerID(layerID);
-	if(result > 0){
-		try{
-			activeDocument.backgroundLayer;
-			var bkGround = 1;
-		}catch(e) {
-			var bkGround = 0;
-		}
-		selectLayerByIndex(result - bkGround ,add);
-	} else {
-		alert("Layer does not exist");
-	}
+    var result =getLayerItemIndexByLayerID(layerID);
+    if(result > 0){
+        try{
+            activeDocument.backgroundLayer;
+            var bkGround = 1;
+        }catch(e) {
+            var bkGround = 0;
+        }
+        selectLayerByIndex(result - bkGround ,add);
+    } else {
+        alert("Layer does not exist");
+    }
 }
 
 function selectLayerByIndex(index,add){
-	add = (add == undefined)  ? add = false : add;
-	var ref = new ActionReference();
-		ref.putIndex(charIDToTypeID("Lyr "), index);
-		var desc = new ActionDescriptor();
-		desc.putReference(charIDToTypeID("null"), ref );
-			 if(add) desc.putEnumerated( stringIDToTypeID( "selectionModifier" ), stringIDToTypeID( "selectionModifierType" ), stringIDToTypeID( "addToSelection" ) );
-		  desc.putBoolean( charIDToTypeID( "MkVs" ), false );
-		 try{
-		executeAction(charIDToTypeID("slct"), desc, DialogModes.NO );
-	}catch(e){}
+    add = (add == undefined)  ? add = false : add;
+    var ref = new ActionReference();
+        ref.putIndex(charIDToTypeID("Lyr "), index);
+        var desc = new ActionDescriptor();
+        desc.putReference(charIDToTypeID("null"), ref );
+             if(add) desc.putEnumerated( stringIDToTypeID( "selectionModifier" ), stringIDToTypeID( "selectionModifierType" ), stringIDToTypeID( "addToSelection" ) );
+          desc.putBoolean( charIDToTypeID( "MkVs" ), false );
+         try{
+        executeAction(charIDToTypeID("slct"), desc, DialogModes.NO );
+    }catch(e){}
 }
 
 function selectAllLayers() {
