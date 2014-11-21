@@ -57,6 +57,7 @@ function main(){
     removeAllEmptyArtLayers(doc, layercomps);
     removeEmptyLayerSets();
     doc.layerComps["mail@brunoherfst.com"].remove();
+    doc.selection.deselect();
     alert("Done cleaning layers!");
 }
 
