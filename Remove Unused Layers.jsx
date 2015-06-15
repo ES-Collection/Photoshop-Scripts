@@ -23,42 +23,51 @@ function main(){
         }
     }
 
+	// Add curent view into a layer comp
     doc.layerComps.add("mail@brunoherfst.com"); //unique
 
+	// remove all invisible layers
+	// collect all layers and safe the layer ID and Keep flag
     selectAllLayers();
     var layersSelected=getSelectedLayersIdx();
     var layerIDs=[];
-    for(var d =0;d<layersSelected.length;d++){
-        layerIDs.push([[layersSelected[d]],["N"]]);
+    for(var d=0; d<layersSelected.length; d++){
+        layerIDs.push([layersSelected[d],"N"]);
     }
+	deselectLayers();
+
+    // Now check which layers we need to save by going through all layer comps
     for( var c = 0; c < doc.layerComps.length; c++ ){
-        doc.layerComps[c].apply();
-        for(var z in layersSelected){
-            if(getLayerVisibilityByIndex( Number(layersSelected[z]))){
-                for(var s in layerIDs){
-                    if(Number(layersSelected[z]) == Number(layerIDs[s][0])){
-                        layerIDs[s][1] = "Y";
-                        break;
-                    }
-                }
+        doc.layerComps[c].apply(); // Load the layer-comp and see what needs saving
+        for(var z in layerIDs){
+            if(getLayerVisibilityByIndex( Number(layerIDs[z][0]))){
+                layerIDs[z][1] = "Y";
             }
         }
     }
-    var toDelete=[];
+
+	// WE NEED TO MAKE SURE LAYER CLIP MASKS ARE SELECTED TOO BASED ON THE BOTTOM LAYER IN THE GROUP
+	// Select all layers to be deleted
     for(var l in layerIDs) {
         if(layerIDs[l][1].toString() == "N") {
-            toDelete.push(getIDX(Number(layerIDs[l][0])));
+        	selectLayerByIndex(Number(layerIDs[l][0]), true);
         }
     }
-    for(var t in toDelete) {
-        selLayer(Number(toDelete[t]));
-        doc.activeLayer.remove();
-    }
+	// delete them
+	doc.activeLayer.remove();
+
     removeAllEmptyArtLayers(doc, layercomps);
     removeEmptyLayerSets();
     doc.layerComps["mail@brunoherfst.com"].remove();
+
     doc.selection.deselect();
     alert("Done cleaning layers!");
+}
+
+function isAdjustmentLayer(){
+	var ref = new ActionReference();
+	ref.putEnumerated( charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt") );
+	return executeActionGet(ref).hasKey(stringIDToTypeID('adjustment'));
 }
 
 function removeAllLayerComps(doc){
@@ -213,6 +222,14 @@ function selectAllLayers() {
     desc29.putReference( charIDToTypeID('null'), ref23 );
     executeAction( stringIDToTypeID('selectAllLayers'), desc29, DialogModes.NO );
 }
+
+function deselectLayers() {
+    var desc01 = new ActionDescriptor();
+        var ref01 = new ActionReference();
+        ref01.putEnumerated( charIDToTypeID('Lyr '), charIDToTypeID('Ordn'), charIDToTypeID('Trgt') );
+    desc01.putReference( charIDToTypeID('null'), ref01 );
+    executeAction( stringIDToTypeID('selectNoLayers'), desc01, DialogModes.NO );
+};
 
 function getSelectedLayersIdx(){
    var selectedLayers = new Array;
