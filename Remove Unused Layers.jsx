@@ -4,6 +4,9 @@
 // This script will delete all layers that are not in use
 // If there are layer comps present, it will ask if you'd like to keep them.
 
+// Note: it does not remove layers that are clipped to the background.
+// No one would not do that, right? ;)
+
 #target photoshop
 
 function main(){
@@ -46,23 +49,81 @@ function main(){
         }
     }
 
-	// WE NEED TO MAKE SURE LAYER CLIP MASKS ARE SELECTED TOO BASED ON THE BOTTOM LAYER IN THE GROUP
+	// We need to make sure clipping layers are selected too
+	var clippingLayerIDs=[];
+	for(var l in layerIDs) {
+        if(layerIDs[l][1].toString() == "N") {
+        	var LID = Number(layerIDs[l][0]); // Layer ID
+        	var clipInfo = isClippingLayer( LID );
+        	if(clipInfo == 'bottomClippingLayer'){
+        		LID++; // Move on to the layers in questions
+        		while ( isClippingLayer(LID) ) {
+        			clipInfo = isClippingLayer( LID );
+        			// Make sure we are not moving into the next clipping group!
+        			if(clipInfo != 'bottomClippingLayer'){
+        				clippingLayerIDs.push([LID,"N"]);
+						//selectLayerByIndex(LID, true); //test
+						LID++;
+        			} else {
+        				break; // while loop
+        			}
+        		}
+        	}
+        }
+    }
+	layerIDs = layerIDs.concat(clippingLayerIDs);
+
 	// Select all layers to be deleted
     for(var l in layerIDs) {
         if(layerIDs[l][1].toString() == "N") {
         	selectLayerByIndex(Number(layerIDs[l][0]), true);
         }
     }
-	// delete them
+	// delete selected layers
 	doc.activeLayer.remove();
 
-    removeAllEmptyArtLayers(doc, layercomps);
-    removeEmptyLayerSets();
-    doc.layerComps["mail@brunoherfst.com"].remove();
+	// THE ACTIONS BELOW WILL NEED TO HAVE THEIR LAYER IDS SAFED AND CHECKED FOR CLIPPING LAYERS TOO
+	// THE STUFF ABOVE SHOULD BE REWRITTEN TO A FUNCTION: removeAllInvissibleLayers(doc, layercomps);
 
+    removeAllEmptyArtLayers(doc, layercomps); //If layer is part of a clipping layer we can remove the whole clippinggroup
+    removeEmptyLayerSets();
+
+    doc.layerComps["mail@brunoherfst.com"].remove();
     doc.selection.deselect();
+
     alert("Done cleaning layers!");
 }
+
+function isClippingLayer(layerID){
+	var clipInfo=false;
+
+	var ref = new ActionReference();
+	    ref.putIndex(charIDToTypeID("Lyr "), layerID);
+
+	try{
+		var desc = executeActionGet(ref);
+	} catch(e) {
+		// Not a valid layer
+		return clipInfo;
+	}
+
+	var group = desc.getBoolean(stringIDToTypeID('group'));
+	if(group) clipInfo = 'topClippingLayer';
+
+	try{
+   		var ref = new ActionReference();
+   		ref.putIndex(charIDToTypeID( 'Lyr ' ), layerID+1 );
+   		desc =  executeActionGet(ref);
+	}catch(e){
+		//alert("Top layer!");
+		return clipInfo;
+	}
+
+    group = desc.getBoolean(stringIDToTypeID('group'));
+    if(group && clipInfo == 'topClippingLayer' ) clipInfo = 'middleClippingLayer';
+    if(group && clipInfo == false ) clipInfo = 'bottomClippingLayer';
+    return clipInfo;
+};
 
 function isAdjustmentLayer(){
 	var ref = new ActionReference();
@@ -188,7 +249,7 @@ function getLayerItemIndexByLayerID(id) {
 }
 
 function selLayer(layerID,add){
-    var result =getLayerItemIndexByLayerID(layerID);
+    var result = getLayerItemIndexByLayerID(layerID);
     if(result > 0){
         try{
             activeDocument.backgroundLayer;
