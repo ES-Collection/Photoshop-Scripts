@@ -5,7 +5,7 @@
 // If there are layer comps present, it will ask if you'd like to keep them.
 
 // Note: it does not remove layers that are clipped to the background.
-// No one would not do that, right? ;)
+// No one would do that, right? ;)
 
 #target photoshop
 
