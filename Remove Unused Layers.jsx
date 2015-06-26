@@ -1,4 +1,4 @@
-// Remove_Unused_Layers.jsx
+// Remove Unused Layers.jsx
 // A Photoshop script by Bruno Herfst
 
 // This script will delete all layers that are not in use
@@ -6,6 +6,15 @@
 
 // Note: it does not remove layers that are clipped to the background.
 // No one would do that, right? ;)
+
+/*
+
+<javascriptresource> 
+<name>Remove Unused Layers</name> 
+<category>Delete</category>
+</javascriptresource> 
+
+*/
 
 #target photoshop
 
@@ -74,13 +83,17 @@ function main(){
 	layerIDs = layerIDs.concat(clippingLayerIDs);
 
 	// Select all layers to be deleted
+    var layersSelected = false;
     for(var l in layerIDs) {
         if(layerIDs[l][1].toString() == "N") {
         	selectLayerByIndex(Number(layerIDs[l][0]), true);
+        	layersSelected = true;
         }
     }
-	// delete selected layers
-	doc.activeLayer.remove();
+    // delete selected layers
+    if(layersSelected) {
+    	doc.activeLayer.remove();
+    }
 
 	// THE ACTIONS BELOW WILL NEED TO HAVE THEIR LAYER IDS SAFED AND CHECKED FOR CLIPPING LAYERS TOO
 	// THE STUFF ABOVE SHOULD BE REWRITTEN TO A FUNCTION: removeAllInvissibleLayers(doc, layercomps);
@@ -324,6 +337,10 @@ function getSelectedLayersIdx(){
 }
 
 // Set the wheels in motion!
-main();
+try{
+	main();
+} catch(err) {
+	alert(err);
+}
 
 //EOF
