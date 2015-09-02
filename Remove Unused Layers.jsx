@@ -19,6 +19,7 @@
 #target photoshop
 
 function main(){
+    app.displayDialogs = DialogModes.NO;
     var layercomps = false;
     if(!documents.length) return;
     var doc = app.activeDocument;
@@ -211,10 +212,10 @@ function removeAllEmptyArtLayers(obj, layercomps) {
         try{
             activeDocument.selection.fill( app.foregroundColor);
         } catch(e){
-            bounds = ["0px","0px","0px","0px"]; // Off canvas
+            bounds = [0,0,0,0]; // Off canvas
         }
 
-        var pixels = Math.abs(bounds[0])+Math.abs(bounds[1])+Math.abs(bounds[2])+Math.abs(bounds[3]);
+        var pixels = Math.abs(parseFloat(bounds[0]))+Math.abs(parseFloat(bounds[1]))+Math.abs(parseFloat(bounds[2]))+Math.abs(parseFloat(bounds[3]));
         if(pixels == 0){
             // Layer is empty
             EmptyOrOffCanvas = true;
