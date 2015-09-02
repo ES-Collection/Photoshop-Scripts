@@ -1,7 +1,7 @@
 // Remove Unused Layers.jsx
 // A Photoshop script by Bruno Herfst
 
-// This script will delete all layers that are not in use
+// This script will delete all layers that are not in use (exept locked layers)
 // If there are layer comps present, it will ask if you'd like to keep them.
 
 // Note: it does not remove layers that are clipped to the background.
@@ -52,11 +52,13 @@ function main(){
     for( var c = 0; c < doc.layerComps.length; c++ ){
         doc.layerComps[c].apply(); // Load the layer-comp and see what needs saving
         for(var z in layerIDs){
-            if(getLayerVisibilityByIndex( Number(layerIDs[z][0]))){
+            // Exclude vissible and locked layers (Also safe layer sets for now as we will deal with them later)
+            if( getLayerVisibilityByIndex(Number(layerIDs[z][0])) || isLocked(Number(layerIDs[z][0])) || isLayerSet(Number(layerIDs[z][0])) ){
                 layerIDs[z][1] = "Y";
             }
         }
     }
+    deselectLayers();
 
 	// We need to make sure clipping layers are selected too
 	var clippingLayerIDs=[];
@@ -82,7 +84,10 @@ function main(){
     }
 	layerIDs = layerIDs.concat(clippingLayerIDs);
 
+    // !! We need to make sure not to remove layer sets that contain hidden locked layers
+
 	// Select all layers to be deleted
+    deselectLayers();
     var layersSelected = false;
     for(var l in layerIDs) {
         if(layerIDs[l][1].toString() == "N") {
@@ -92,6 +97,7 @@ function main(){
     }
     // delete selected layers
     if(layersSelected) {
+        // Now we can remove them
     	doc.activeLayer.remove();
     }
 
@@ -99,12 +105,22 @@ function main(){
 	// THE STUFF ABOVE SHOULD BE REWRITTEN TO A FUNCTION: removeAllInvissibleLayers(doc, layercomps);
 
     removeAllEmptyArtLayers(doc, layercomps); //If layer is part of a clipping layer we can remove the whole clippinggroup
+
     removeEmptyLayerSets();
 
     doc.layerComps["mail@brunoherfst.com"].remove();
     doc.selection.deselect();
 
     alert("Done cleaning layers!");
+}
+
+function isLocked(myLayer){
+    selectLayerByIndex(myLayer);
+
+    if(activeDocument.activeLayer.allLocked || activeDocument.activeLayer.pixelsLocked || activeDocument.activeLayer.positionLocked || activeDocument.activeLayer.transparentPixelsLocked){
+        return true;
+    }
+    return false;
 }
 
 function isClippingLayer(layerID){
@@ -174,6 +190,7 @@ function removeEmptyLayerSets(){
 
 function removeAllEmptyArtLayers(obj, layercomps) {
     function isLayerEmptyOrOffCanvas(layerRef) {
+        var EmptyOrOffCanvas = false;
         function cTID(s) { return app.charIDToTypeID(s); };
 
         var desc47 = new ActionDescriptor();
@@ -187,23 +204,24 @@ function removeAllEmptyArtLayers(obj, layercomps) {
         executeAction( cTID('setd'), desc47, DialogModes.NO );
 
         var bounds = layerRef.bounds;
-        var docRef = activeDocument;
-
-        var layerSetRef = docRef.layerSets.add();
-        var layerRef = layerSetRef.artLayers.add();
+        // now we have the current bounds we can replace the layerRef var with new temp Layer
+        var layerRef = activeDocument.artLayers.add();
+        
+        // let's see if there are pixels on canvas
         try{
-            docRef.selection.fill( app.foregroundColor);
+            activeDocument.selection.fill( app.foregroundColor);
         } catch(e){
-           //alert("off-canvas!");
-           bounds = ["0 px","0 px","0 px","0 px"];
+            bounds = ["0px","0px","0px","0px"]; // Off canvas
         }
-        layerSetRef.remove();
-        for (var i = 0; i < bounds.length; i++) {
-            if (parseFloat(bounds[i]) > 0) {
-                return false;
-            }
+
+        var pixels = Math.abs(bounds[0])+Math.abs(bounds[1])+Math.abs(bounds[2])+Math.abs(bounds[3]);
+        if(pixels == 0){
+            // Layer is empty
+            EmptyOrOffCanvas = true;
         }
-        return true;
+
+        layerRef.remove();
+        return EmptyOrOffCanvas;
     };
 
     for( var i = obj.artLayers.length-1; 0 <= i; i--) {
@@ -214,9 +232,15 @@ function removeAllEmptyArtLayers(obj, layercomps) {
                 }
             } else {
 				// we can do a deeper clean if layers are not attached to layer compositions.
-				if (isLayerEmptyOrOffCanvas(obj.artLayers[i])){
-					obj.artLayers[i].remove();
-				}
+                // This could turn a invisible layer on for locked layers in invissible layer sets
+                // We don't have to check locked layers anyway
+                var tempLayer = activeDocument.artLayers.add(); // In case our top layer is invissible
+                if(obj.artLayers[i].allLocked || obj.artLayers[i].pixelsLocked || obj.artLayers[i].positionLocked || obj.artLayers[i].transparentPixelsLocked){
+                    // Do nothing
+                } else if (isLayerEmptyOrOffCanvas(obj.artLayers[i])){
+                    obj.artLayers[i].remove();
+                }
+                tempLayer.remove();
 			}
         } catch (e) {
             //do nothing
