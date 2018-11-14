@@ -13,8 +13,8 @@ Contents
   > Add corner styles to pixel shapes.
 * Delete All Masks.jsx
   > Delete Layer Masks for all layers.
-* Devider Guide.jsx
-  > Create guides by deviding demensions
+* Divider Guide.jsx
+  > Create guides by dividing demensions
 * ForegroundColour 2 InDesignSwatch.jsx
   > Create a CMYK swatch in InDesign based on the foreground colour in Photoshop
 * Link All Masks.jsx
@@ -28,7 +28,7 @@ Contents
 
 Installing
 ----------
-To install simply copy the files into the directory
+Simply clone this repo into the Photoshop scripts directory:
 `Adobe Photoshop [Your Version]/Presets/Scripts/`
 
 The next time Photoshop is opened, you can find the scripts under `File -> Scripts`
