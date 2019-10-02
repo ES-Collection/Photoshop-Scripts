@@ -1,5 +1,5 @@
 // edit location of the file used as registration mark
-var markFile = new File('~/desktop/reg_mark.eps');
+var markFile = new File(app.path + "/Presets/Scripts/reg_mark.eps");
 var horizontalOffest = new UnitValue(10,'pt');
 var doc = app.activeDocument;
 // the color used for the text
