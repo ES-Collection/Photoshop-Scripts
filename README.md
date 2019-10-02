@@ -39,8 +39,6 @@ Simply clone this repo into the Photoshop scripts directory:
 
 The next time Photoshop is opened, you can find the scripts under `File -> Scripts`
 
-Note: 'Reg Marks and Labels.jsx' requires you to edit the location of `reg_mark.eps` for it to work properly, default location is on your desktop.
-
 Contributors
 ------------
 
