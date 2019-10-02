@@ -25,6 +25,12 @@ Contents
   > Change all Pattern Layer scales and Layer Style Pattern Overlay scales to 100%
 * Split_2_Layers.jsx
   > Separate each contiguous group of pixels to its own layer.
+* Channel Labels.jsx
+  > Create labels in the top right of the channel using the channel text.
+* Spot Channels to Proof.jsx
+  > Create Layers from Spot Color channels so a bitmap proof can be generated.
+* Reg Marks and Labels.jsx / reg_mark.eps
+  > Add Registration Marks & Labels to Spot Color channels for film output.
 
 Installing
 ----------
@@ -33,7 +39,7 @@ Simply clone this repo into the Photoshop scripts directory:
 
 The next time Photoshop is opened, you can find the scripts under `File -> Scripts`
 
-Contributers
+Contributors
 ------------
 
   * Bruno Herfst
@@ -43,4 +49,5 @@ Contributers
   * Joergen Geerds
   * Mike Hale
   * Paul MR
+  * Overcooked Panda
 
